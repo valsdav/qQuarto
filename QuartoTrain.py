@@ -21,10 +21,6 @@ from keras.layers.convolutional import Conv2D
 from keras.optimizers import SGD , Adam
 import tensorflow as tf
 
-# before training init writer (for tensorboard log) / model
-writer = tf.summary.FileWriter("./logs")
-
-
 
 # In[2]:
 
@@ -35,7 +31,7 @@ from Quarto import *
 # In[3]:
 GAMMA = 0.99 # decay rate of past observations
 OFFSET = 0  #number of oservation already done
-OBSERVATION = 32 + OFFSET # timesteps to observe before training
+OBSERVATION = 5000 + OFFSET # timesteps to observe before training
 EXPLORE = 3000000. # frames over which to anneal epsilon
 FINAL_EPSILON = 0.0001 # final value of epsilon
 INITIAL_EPSILON = 0.1 # starting value of epsilon
@@ -72,7 +68,7 @@ def build_model():
     adam = Adam(lr=LEARNING_RATE)
     model.compile(loss='mse',optimizer=adam)
 
-    plot_model(model,show_shapes=True, to_file='model.png')
+    #plot_model(model,show_shapes=True, to_file='model.png')
     print("We finish building the model")
     return model
 
@@ -99,7 +95,7 @@ def select_actions(status, rand=True):
        # print("----------Random Action----------")
         a_index = random.randrange(len(actions))
         image = status.get_action_image(actions[a_index])
-        show_action_image(image)
+        #show_action_image(image)
     else:
         a_images_t = status.get_action_images(actions)
         a_index = np.argmax(model.predict_on_batch(a_images_t))
@@ -115,7 +111,7 @@ replay_memory = deque()
 s_t0 = get_initial_status()
 a_t0,im_t0 = select_actions(s_t0)
 t = OFFSET
-while(t< 150):
+while(t< 100000000):
     loss = 0
     Q_sa = 0
     Q_sa_target = 0
@@ -182,6 +178,8 @@ while(t< 150):
         #Now we do the experience replay
         for i in range(0, len(minibatch)):
             ttrain_j1 = time.time()
+            ttrain_j2 = 0
+            ttrain_j3 = 0
             state_t = minibatch[i][0]
             action_t = minibatch[i][1]
             image_t = minibatch[i][2]
@@ -220,9 +218,6 @@ while(t< 150):
         #backpropagation training
         ttrain2 = time.time()
         loss += model.train_on_batch(inputs, targets)
-        summary = tf.Summary(value=[
-                tf.Summary.Value(tag="summary_tag", simple_value=t),])
-        writer.add_summary(summary)
         ttrain3 = time.time()
         deltat_train += ttrain3- ttrain2
 
@@ -232,12 +227,11 @@ while(t< 150):
     if t % 1000 == 0:
         print("Now we save model")
         model.save_weights("model.h5", overwrite=True)
-        #with open("model.json", "w") as outfile:
-        #    json.dump(model.to_json(), outfile)
-        plt.plot([i for i in range(len(losses))], losses)
-        plt.savefig("losses{}.png".format(t%10000))
+        with open("losses.txt", "w") as outfile:
+            outfile.write("\n".join(losses))
+
     # print info
-    if (t> OBSERVE and t % 10 == 0) or (t< OBSERVE and t % 100 == 0):
+    if t % 100 == 0:
         state = ""
         if t <= OBSERVE:
             state = "observe"
@@ -248,4 +242,4 @@ while(t< 150):
 
         print("Epoch {0:d} \t| State {1} \t| Epsilon {2:>5.4f} \t| N.images {3:>4d} \t| TP {4:>4.2f} \t| TT {5:>4.2f} \t|  Reward {6:>4d} \t| Q_sa {7:>6.3f} \t| Q_sa_target {8:>6.3f} \t| Loss {9:>8.3f}".
              format(t,state,epsilon,n_images_train, deltat_prepare_train,deltat_train, r_t ,Q_sa, Q_sa_target, loss))
-        losses.append(loss)
+        losses.append(str(loss))
