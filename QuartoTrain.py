@@ -75,8 +75,8 @@ def build_model():
 
 model = build_model()
 print ("Now we load weight")
-if os.path.isfile("model.h5"):
-    model.load_weights("model.h5")
+if os.path.isfile("output/model.h5"):
+    model.load_weights("output/model.h5")
     adam = Adam(lr=LEARNING_RATE)
     model.compile(loss='mse',optimizer=adam)
     print ("Weight load successfully")
@@ -226,8 +226,8 @@ while(t< 100000000):
      # save progress every 10000 iterations
     if t % 1000 == 0:
         print("Now we save model")
-        model.save_weights("model.h5", overwrite=True)
-        with open("losses.txt", "w") as outfile:
+        model.save_weights("output/model.h5", overwrite=True)
+        with open("output/losses.txt", "w") as outfile:
             outfile.write("\n".join(losses))
 
     # print info
