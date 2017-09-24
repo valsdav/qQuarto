@@ -58,13 +58,16 @@ def get_initial_status():
     return Status(Gameboard(),letter, left_letters, left_items_image(left_letters))
 
 
-def show_action_image(image):
+def show_action_image(image, save=False):
     f,(a1,a2,a3,a4) = plt.subplots(4,1)
     a1.imshow(image[:,:,0], cmap="gray",vmin=0, vmax=255)
     a2.imshow(image[:,:,1], cmap="gray",vmin=0, vmax=255)
     a3.imshow(image[:,:,2], cmap="gray",vmin=0, vmax=255)
     a4.imshow(image[:,:,3], cmap="gray",vmin=0, vmax=255)
-    plt.savefig("actions/action{}.png".format(time.time()))
+    if save:
+        plt.savefig("actions/action{}.png".format(time.time()))
+    else:
+        plt.show()
 
 
 
