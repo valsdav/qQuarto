@@ -30,14 +30,14 @@ from Quarto import *
 
 # In[3]:
 GAMMA = 0.99 # decay rate of past observations
-OFFSET = 0  #number of oservation already done
-OBSERVATION = 5000 + OFFSET # timesteps to observe before training
+OFFSET = 600000  #number of oservation already done
+OBSERVATION = 50000 + OFFSET # timesteps to observe before training
 EXPLORE = 3000000. # frames over which to anneal epsilon
 FINAL_EPSILON = 0.0001 # final value of epsilon
 INITIAL_EPSILON = 0.1 # starting value of epsilon
 REPLAY_MEMORY = 50000 # number of previous transitions to remember
 BATCH = 32 # size of minibatch
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 1e-6
 
 #We go to training mode
 OBSERVE = OBSERVATION
@@ -188,6 +188,7 @@ while(t< 100000000):
             terminal = minibatch[i][5]
             # Saving the action image of the first action as input
             inputs[i:i + 1] = image_t
+            Q_sa = float(model.predict(image_t.reshape(1,4,16,4))[0])
 
             # Getting all the possible action in the final state
             Q_sa_max = 0
@@ -206,10 +207,9 @@ while(t< 100000000):
                     n_images_train+=len(final_actions)
                     a_images_t1 = state_t1.get_action_images(final_actions)
                     ttrain_j2 = time.time()
-                    Q_sa = np.max(model.predict_on_batch(a_images_t1))
+                    Q_sa_next = np.max(model.predict_on_batch(a_images_t1))
                     ttrain_j3 = time.time()
-                    #Qs = [ model.predict(a_im) for a_im in a_images_t1]
-                    Q_sa_max = reward_t + GAMMA * Q_sa
+                    Q_sa_max = reward_t + GAMMA * Q_sa_next
             #Saving target
             targets[i:i+1] = Q_sa_max
             Q_sa_target = Q_sa_max
