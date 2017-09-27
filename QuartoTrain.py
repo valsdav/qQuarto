@@ -18,26 +18,26 @@ from keras.models import model_from_json
 from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers.convolutional import Conv2D
-from keras.optimizers import SGD , Adam
+from keras.optimizers import Adam
 import tensorflow as tf
 
 
 # In[2]:
-
-
 from Quarto import *
 
 
-# In[3]:
 GAMMA = 0.99 # decay rate of past observations
-OFFSET = 600000  #number of oservation already done
-OBSERVATION = 50000 + OFFSET # timesteps to observe before training
-EXPLORE = 3000000. # frames over which to anneal epsilon
+OFFSET = 0  #number of oservation already done
+OBSERVATION = 5000 + OFFSET # timesteps to observe before training
+EXPLORE = 3000000 # frames over which to anneal epsilon
+EPOCHS = 3000000
 FINAL_EPSILON = 0.0001 # final value of epsilon
 INITIAL_EPSILON = 0.1 # starting value of epsilon
 REPLAY_MEMORY = 50000 # number of previous transitions to remember
 BATCH = 32 # size of minibatch
-LEARNING_RATE = 1e-6
+LEARNING_RATE = 1e-5
+ALPHA = 0.6
+BETA = 0.4
 
 #We go to training mode
 OBSERVE = OBSERVATION
@@ -48,15 +48,12 @@ if OFFSET:
         epsilon -= (INITIAL_EPSILON - FINAL_EPSILON) / EXPLORE
 
 
-# In[4]:
-
-
 from keras.utils import plot_model
 
 def build_model():
     print("Now we build the model")
     model = Sequential()
-    model.add(Conv2D(32, (2,3), strides=(1, 1), input_shape=(4,16,4)))
+    model.add(Conv2D(32, (2,3), strides=(1, 1), input_shape=(4,16,3)))
     model.add(Activation('relu'))
     model.add(Conv2D(64, (2,3), strides=(1, 1)))
     model.add(Activation('relu'))
@@ -66,7 +63,7 @@ def build_model():
     model.add(Dense(1))
 
     adam = Adam(lr=LEARNING_RATE)
-    model.compile(loss='mse',optimizer=adam)
+    model.compile(loss=quarto_loss.prioritization_loss,optimizer=adam)
 
     #plot_model(model,show_shapes=True, to_file='model.png')
     print("We finish building the model")
@@ -78,7 +75,7 @@ print ("Now we load weight")
 if os.path.isfile("output/model.h5"):
     model.load_weights("output/model.h5")
     adam = Adam(lr=LEARNING_RATE)
-    model.compile(loss='mse',optimizer=adam)
+    model.compile(loss=quarto_loss.prioritization_loss,optimizer=adam)
     print ("Weight load successfully")
 
 # In[5]:
@@ -103,18 +100,18 @@ def select_actions(status, rand=True):
     return actions[a_index] , image
 
 
-# In[ ]:
-
+rewards = []
+pieces = []
 losses = []
-replay_memory = deque()
+total_losses = []
+
+replay_memory = Experience(REPLAY_MEMORY, BATCH, ALPHA)
 #Initial status
 s_t0 = get_initial_status()
 a_t0,im_t0 = select_actions(s_t0)
 t = OFFSET
-while(t< 100000000):
+while(t< EPOCHS +1):
     loss = 0
-    Q_sa = 0
-    Q_sa_target = 0
     r_t = 0
     deltat_train = 0
     deltat_prepare_train = 0
@@ -128,9 +125,9 @@ while(t< 100000000):
     s_t1, win, win_r = s_t0.get_new_status(a_t0)
     if win:
         #Increasing of 100 the reward
-        r_t = win_r +100
+        r_t = win_r + 100
         #saving win status
-        replay_memory.append((s_t0, a_t0, im_t0, r_t, s_t1, win))
+        replay_memory.add((s_t0, a_t0, im_t0, r_t, s_t1, win), 100000)
         #restarting cleaning status
         s_t0 = get_initial_status()
         a_t0, im_t0 = select_actions(s_t0)
@@ -158,25 +155,26 @@ while(t< 100000000):
             #print("WIN of ENEMY! Reward: {}".format(r_t))
 
         # we save the state in the replay memory
-        replay_memory.append((s_t0, a_t0, im_t0, r_t, s_t2, win))
+        replay_memory.add((s_t0, a_t0, im_t0, r_t, s_t2, win),100000)
         # to the next state
         s_t0 = s_t1
         a_t0 = a_t1
         im_t0 = im_t1
 
 
-    if len(replay_memory) > REPLAY_MEMORY:
-            replay_memory.popleft()
-
     #only train if done observing
     if t > OBSERVE:
         ttrain1 = time.time()
+        #getting stuff for experience replay
+        minibatch, weights, indices = replay_memory.select(BETA)
+        #setting the weights for the loss function
+        quarto_loss.weights = weights
         #sample a minibatch to train on
-        minibatch = random.sample(replay_memory, BATCH)
-        inputs = np.zeros((BATCH, 4,16,4))
+        inputs = np.zeros((BATCH, 4,16,3))
         targets = np.zeros((BATCH))
+        new_priorities = []
         #Now we do the experience replay
-        for i in range(0, len(minibatch)):
+        for i in range(BATCH):
             ttrain_j1 = time.time()
             ttrain_j2 = 0
             ttrain_j3 = 0
@@ -186,9 +184,13 @@ while(t< 100000000):
             reward_t = minibatch[i][3]
             state_t1 = minibatch[i][4]
             terminal = minibatch[i][5]
+
             # Saving the action image of the first action as input
             inputs[i:i + 1] = image_t
-            Q_sa = float(model.predict(image_t.reshape(1,4,16,4))[0])
+            #Q_sa status
+            Q_sa = float(model.predict(image_t.reshape(1,4,16,3))[0])
+            rewards.append(reward_t)
+            pieces.append(state_t.get_num_used_pieces())
 
             # Getting all the possible action in the final state
             Q_sa_max = 0
@@ -210,9 +212,15 @@ while(t< 100000000):
                     Q_sa_next = np.max(model.predict_on_batch(a_images_t1))
                     ttrain_j3 = time.time()
                     Q_sa_max = reward_t + GAMMA * Q_sa_next
+
             #Saving target
             targets[i:i+1] = Q_sa_max
-            Q_sa_target = Q_sa_max
+
+            #operations for the experience replay
+            td_error = (Q_sa_max - Q_sa)**2
+            losses.append(td_error * weights[i])
+            new_priorities.append(td_error)
+
             deltat_prepare_train += ttrain_j2 - ttrain_j1
             deltat_train += ttrain_j3 - ttrain_j2
         #backpropagation training
@@ -221,17 +229,23 @@ while(t< 100000000):
         ttrain3 = time.time()
         deltat_train += ttrain3- ttrain2
 
+        #update priorities in experience replay component
+        replay_memory.priority_update(indices, new_priorities)
+
     #going to the next epoch. The action_t0 and state_t0 are already setted
     t+=1
      # save progress every 10000 iterations
     if t % 1000 == 0:
         print("Now we save model")
         model.save_weights("output/model.h5", overwrite=True)
+        with open("output/losses_details.txt", "w") as outfile:
+            for i in range(len(losses)):
+                outfile.write(str(losses[i])+" "+str(rewards[i])+" "+ str(pieces[i]) +"\n")
         with open("output/losses.txt", "w") as outfile:
-            outfile.write("\n".join(losses))
+            outfile.write("\n".join(total_losses))
 
     # print info
-    if t % 100 == 0:
+    if (t > OBSERVE +1):
         state = ""
         if t <= OBSERVE:
             state = "observe"
@@ -239,7 +253,12 @@ while(t< 100000000):
             state = "explore"
         else:
             state = "train"
+        if t % 100 == 0:
+            print("Epoch {0:d} | N.images {1:>4d} | TP {2:>4.2f} | TT {3:>4.2f} | Reward {4:>4d} | Loss {5:>8.3f}".
+                 format(t,n_images_train, deltat_prepare_train,deltat_train, r_t , loss))
+            total_losses.append(str(loss))
 
-        print("Epoch {0:d} \t| State {1} \t| Epsilon {2:>5.4f} \t| N.images {3:>4d} \t| TP {4:>4.2f} \t| TT {5:>4.2f} \t|  Reward {6:>4d} \t| Q_sa {7:>6.3f} \t| Q_sa_target {8:>6.3f} \t| Loss {9:>8.3f}".
-             format(t,state,epsilon,n_images_train, deltat_prepare_train,deltat_train, r_t ,Q_sa, Q_sa_target, loss))
-        losses.append(str(loss))
+
+    elif (t <= OBSERVE) and t%100 == 0:
+         print("Epoch {0:d} | N.images {1:>4d} | TP {2:>4.2f} | TT {3:>4.2f} | Reward {4:>4d} | Loss {5:>8.3f}".
+             format(t,n_images_train, deltat_prepare_train,deltat_train, r_t , loss))
