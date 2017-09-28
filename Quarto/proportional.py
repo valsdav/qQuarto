@@ -67,23 +67,23 @@ class Experience(object):
 
         out = []
         indices = []
-        weights = []
+        #weights = []
         priorities = []
         for _ in range(self.batch_size):
             r = random.random()
             data, priority, index = self.tree.find(r)
             priorities.append(priority)
-            weights.append((1./self.memory_size/priority)**beta if priority > 1e-16 else 0)
+            #weights.append((1./self.memory_size/priority)**beta if priority > 1e-16 else 0)
             indices.append(index)
             out.append(data)
             self.priority_update([index], [0]) # To avoid duplicating
 
 
         self.priority_update(indices, priorities) # Revert priorities
-        weights = np.array(weights) / max(weights) # Normalize for stability
+        #weights = np.array(weights) / max(weights) # Normalize for stability
 
 
-        return out, weights, indices
+        return out, indices
 
     def priority_update(self, indices, priorities):
         """ The methods update samples's priority.

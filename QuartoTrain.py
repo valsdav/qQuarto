@@ -19,6 +19,7 @@ from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.layers.convolutional import Conv2D
 from keras.optimizers import Adam
+#from keras.utils import plot_model
 import tensorflow as tf
 
 
@@ -48,7 +49,6 @@ if OFFSET:
         epsilon -= (INITIAL_EPSILON - FINAL_EPSILON) / EXPLORE
 
 
-from keras.utils import plot_model
 
 def build_model():
     print("Now we build the model")
@@ -63,8 +63,7 @@ def build_model():
     model.add(Dense(1))
 
     adam = Adam(lr=LEARNING_RATE)
-    model.compile(loss=quarto_loss.prioritization_loss,optimizer=adam)
-
+    model.compile(loss="mse",optimizer=adam)
     #plot_model(model,show_shapes=True, to_file='model.png')
     print("We finish building the model")
     return model
@@ -75,7 +74,7 @@ print ("Now we load weight")
 if os.path.isfile("output/model.h5"):
     model.load_weights("output/model.h5")
     adam = Adam(lr=LEARNING_RATE)
-    model.compile(loss=quarto_loss.prioritization_loss,optimizer=adam)
+    model.compile(loss="mse",optimizer=adam)
     print ("Weight load successfully")
 
 # In[5]:
@@ -166,9 +165,7 @@ while(t< EPOCHS +1):
     if t > OBSERVE:
         ttrain1 = time.time()
         #getting stuff for experience replay
-        minibatch, weights, indices = replay_memory.select(BETA)
-        #setting the weights for the loss function
-        quarto_loss.weights = weights
+        minibatch, indices = replay_memory.select(BETA)
         #sample a minibatch to train on
         inputs = np.zeros((BATCH, 4,16,3))
         targets = np.zeros((BATCH))
@@ -189,8 +186,6 @@ while(t< EPOCHS +1):
             inputs[i:i + 1] = image_t
             #Q_sa status
             Q_sa = float(model.predict(image_t.reshape(1,4,16,3))[0])
-            rewards.append(reward_t)
-            pieces.append(state_t.get_num_used_pieces())
 
             # Getting all the possible action in the final state
             Q_sa_max = 0
@@ -218,8 +213,14 @@ while(t< EPOCHS +1):
 
             #operations for the experience replay
             td_error = (Q_sa_max - Q_sa)**2
-            losses.append(td_error * weights[i])
             new_priorities.append(td_error)
+
+            #saving some stats
+            if t % 100 == 0:
+                losses.append(td_error)
+                rewards.append(reward_t)
+                pieces.append(state_t.get_num_used_pieces())
+            #print("LOSS: {}".format(losses[-1]))
 
             deltat_prepare_train += ttrain_j2 - ttrain_j1
             deltat_train += ttrain_j3 - ttrain_j2
