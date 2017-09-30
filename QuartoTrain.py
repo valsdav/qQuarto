@@ -36,7 +36,7 @@ FINAL_EPSILON = 0.0001 # final value of epsilon
 INITIAL_EPSILON = 0.1 # starting value of epsilon
 REPLAY_MEMORY = 50000 # number of previous transitions to remember
 BATCH = 32 # size of minibatch
-LEARNING_RATE = 1e-5
+LEARNING_RATE = 1e-4
 ALPHA = 0.6
 BETA = 0.4
 
@@ -124,9 +124,9 @@ while(t< EPOCHS +1):
     s_t1, win, win_r = s_t0.get_new_status(a_t0)
     if win:
         #Increasing of 100 the reward
-        r_t = win_r + 100
+        r_t = win_r + 5
         #saving win status
-        replay_memory.add((s_t0, a_t0, im_t0, r_t, s_t1, win), 100000)
+        replay_memory.add((s_t0, a_t0, im_t0, r_t, s_t1, win), 1000)
         #restarting cleaning status
         s_t0 = get_initial_status()
         a_t0, im_t0 = select_actions(s_t0)
@@ -149,12 +149,12 @@ while(t< EPOCHS +1):
         r_t = s_t0.get_transition_reward(a_t0, a_t1)
         if win_e:
             #reward is decreased of 100
-            r_t -= 100
+            r_t -= 5
             # this will be analyzed in the next turn
             #print("WIN of ENEMY! Reward: {}".format(r_t))
 
         # we save the state in the replay memory
-        replay_memory.add((s_t0, a_t0, im_t0, r_t, s_t2, win),100000)
+        replay_memory.add((s_t0, a_t0, im_t0, r_t, s_t2, win),1000)
         # to the next state
         s_t0 = s_t1
         a_t0 = a_t1
@@ -254,12 +254,12 @@ while(t< EPOCHS +1):
             state = "explore"
         else:
             state = "train"
-        if t % 100 == 0:
-            print("Epoch {0:d} | N.images {1:>4d} | TP {2:>4.2f} | TT {3:>4.2f} | Reward {4:>4d} | Loss {5:>8.3f}".
+        if t % 10 == 0:
+            print("Epoch {0:d} | N.images {1:>4d} | TP {2:>4.2f} | TT {3:>4.2f} | Reward {4:>4.1f} | Loss {5:>8.3f}".
                  format(t,n_images_train, deltat_prepare_train,deltat_train, r_t , loss))
             total_losses.append(str(loss))
 
 
     elif (t <= OBSERVE) and t%100 == 0:
-         print("Epoch {0:d} | N.images {1:>4d} | TP {2:>4.2f} | TT {3:>4.2f} | Reward {4:>4d} | Loss {5:>8.3f}".
+         print("Epoch {0:d} | N.images {1:>4d} | TP {2:>4.2f} | TT {3:>4.2f} | Reward {4:>4.1f} | Loss {5:>8.3f}".
              format(t,n_images_train, deltat_prepare_train,deltat_train, r_t , loss))

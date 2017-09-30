@@ -61,13 +61,13 @@ class Gameboard:
                 for k in range(4):
                     sum_row += self.gb[j,k,i]
                 if(abs(sum_row) == 4):
-                    sum_plane += 100
+                    sum_plane += 3
                 elif(abs(sum_row) ==3):
-                    sum_plane += 50
-                elif(abs(sum_row) ==2):
-                    sum_plane += 10
-                elif(abs(sum_row) ==1):
                     sum_plane += 1
+                elif(abs(sum_row) ==2):
+                    sum_plane += 0.5
+                elif(abs(sum_row) ==1):
+                    sum_plane += 0.1
             sum+=sum_plane
         #now diagonals
         for i in range(4):
@@ -77,22 +77,22 @@ class Gameboard:
                 sum_diaga += self.gb[j,k,i]
                 sum_diagb += self.gb[j,k,i]
             if(abs(sum_diaga) == 4):
-                sum += 100
+                sum += 3
             elif(abs(sum_diaga) ==3):
-                sum += 50
-            elif(abs(sum_diaga) ==2):
-                sum += 10
-            elif(abs(sum_diaga) ==1):
                 sum += 1
+            elif(abs(sum_diaga) ==2):
+                sum += 0.5
+            elif(abs(sum_diaga) ==1):
+                sum += 0.1
             #second diagonal
             if(abs(sum_diagb) == 4):
-                sum += 100
+                sum += 3
             elif(abs(sum_diagb) ==3):
-                sum += 50
-            elif(abs(sum_diagb) ==2):
-                sum += 10
-            elif(abs(sum_diagb) ==1):
                 sum += 1
+            elif(abs(sum_diagb) ==2):
+                sum += 0.5
+            elif(abs(sum_diagb) ==1):
+                sum += 0.1
         return sum
 
     def check_win(self):
