@@ -36,9 +36,8 @@ FINAL_EPSILON = 0.0001 # final value of epsilon
 INITIAL_EPSILON = 0.1 # starting value of epsilon
 REPLAY_MEMORY = 50000 # number of previous transitions to remember
 BATCH = 32 # size of minibatch
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 1e-5
 ALPHA = 0.6
-BETA = 0.4
 
 #We go to training mode
 OBSERVE = OBSERVATION
@@ -165,7 +164,7 @@ while(t< EPOCHS +1):
     if t > OBSERVE:
         ttrain1 = time.time()
         #getting stuff for experience replay
-        minibatch, indices = replay_memory.select(BETA)
+        minibatch, indices = replay_memory.select()
         #sample a minibatch to train on
         inputs = np.zeros((BATCH, 4,16,3))
         targets = np.zeros((BATCH))

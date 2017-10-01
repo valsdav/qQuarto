@@ -59,7 +59,7 @@ def get_initial_status():
 
 
 def show_action_image(image, save=False):
-    f,(a1,a2,a3) = plt.subplots(4,1)
+    f,(a1,a2,a3) = plt.subplots(3,1)
     a1.imshow(image[:,:,0], cmap="gray",vmin=0, vmax=255)
     a2.imshow(image[:,:,1], cmap="gray",vmin=0, vmax=255)
     a3.imshow(image[:,:,2], cmap="gray",vmin=0, vmax=255)

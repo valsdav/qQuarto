@@ -44,12 +44,9 @@ class Experience(object):
         """
         self.tree.add(data, priority**self.alpha)
 
-    def select(self, beta):
+    def select(self):
         """ The method return samples randomly.
 
-        Parameters
-        ----------
-        beta : float
 
         Returns
         -------
