@@ -36,8 +36,8 @@ FINAL_EPSILON = 0.0001 # final value of epsilon
 INITIAL_EPSILON = 0.1 # starting value of epsilon
 REPLAY_MEMORY = 50000 # number of previous transitions to remember
 BATCH = 32 # size of minibatch
-LEARNING_RATE = 1e-5
-ALPHA = 0.6
+LEARNING_RATE = 1e-4
+ALPHA = 0.7
 
 #We go to training mode
 OBSERVE = OBSERVATION
