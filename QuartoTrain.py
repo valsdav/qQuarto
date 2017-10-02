@@ -22,6 +22,8 @@ from keras.optimizers import Adam
 #from keras.utils import plot_model
 import tensorflow as tf
 
+import telegramBot as bot
+
 
 # In[2]:
 from Quarto import *
@@ -76,6 +78,7 @@ if os.path.isfile("output/model.h5"):
     model.compile(loss="mse",optimizer=adam)
     print ("Weight load successfully")
 
+bot.send_text("Starting training...")
 # In[5]:
 
 
@@ -232,17 +235,24 @@ while(t< EPOCHS +1):
         #update priorities in experience replay component
         replay_memory.priority_update(indices, new_priorities)
 
-    #going to the next epoch. The action_t0 and state_t0 are already setted
-    t+=1
-     # save progress every 10000 iterations
-    if t % 1000 == 0:
+         # save progress every 10000 iterations
+    if t % 10000 == 0:
         print("Now we save model")
         model.save_weights("output/model.h5", overwrite=True)
         with open("output/losses_details.txt", "w") as outfile:
             for i in range(len(losses)):
                 outfile.write(str(losses[i])+" "+str(rewards[i])+" "+ str(pieces[i]) +"\n")
         with open("output/losses.txt", "w") as outfile:
-            outfile.write("\n".join(total_losses))
+            for i in range(len(total_losses)):
+                outfile.write(str(i) + "\n")
+        if t > OBSERVE:
+            #send data with bot
+            bot.send_text("Epochs: {}".format(t))
+            bot.send_file("output/model.h5")
+            bot.send_file("output/losses_details.txt")
+            bot.send_file("output/losses.txt")
+            bot.send_graph(total_losses)
+            bot.send_details(rewards, losses, pieces)
 
     # print info
     if (t > OBSERVE +1):
@@ -253,12 +263,15 @@ while(t< EPOCHS +1):
             state = "explore"
         else:
             state = "train"
-        if t % 10 == 0:
-            print("Epoch {0:d} | N.images {1:>4d} | TP {2:>4.2f} | TT {3:>4.2f} | Reward {4:>4.1f} | Loss {5:>8.3f}".
-                 format(t,n_images_train, deltat_prepare_train,deltat_train, r_t , loss))
-            total_losses.append(str(loss))
+        if t % 100 == 0:
+            print("Epoch {0:d} | N.images {1:>4d} | TP {2:>4.2f} | TT {3:>4.2f} | Loss {4:>8.3f}".
+                 format(t,n_images_train, deltat_prepare_train,deltat_train, loss))
+            total_losses.append(loss)
 
 
     elif (t <= OBSERVE) and t%100 == 0:
          print("Epoch {0:d} | N.images {1:>4d} | TP {2:>4.2f} | TT {3:>4.2f} | Reward {4:>4.1f} | Loss {5:>8.3f}".
              format(t,n_images_train, deltat_prepare_train,deltat_train, r_t , loss))
+
+    #going to the next epoch. The action_t0 and state_t0 are already setted
+    t+=1
