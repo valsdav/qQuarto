@@ -57,6 +57,12 @@ def get_initial_status():
     left_letters.remove(letter)
     return Status(Gameboard(),letter, left_letters)
 
+def get_initial_status_letter(letter):
+    gb = Gameboard()
+    left_letters = letters[:]
+    left_letters.remove(letter)
+    return Status(Gameboard, letter, left_letters)
+
 
 def show_action_image(image, save=False):
     f,(a1,a2,a3) = plt.subplots(3,1)
@@ -107,7 +113,7 @@ class Status :
         #applying second move on top of the first one
         reward1, second_board = self.gameboard.reward( action1[0], newboard=True)
         reward2 = second_board.reward(action2[0])
-        return reward1 - reward2
+        return reward1 + reward2
 
 
     # def _remove_item_leftimage(self, item):
@@ -142,6 +148,7 @@ class Status :
         self.gameboard.show()
         print("Spaces: ",self.gameboard.spaces)
         print("Item {}, LeftItems: {}".format(self.item, "".join(self.left_items)))
+        print(self.gameboard)
 
     def get_num_used_pieces(self):
         return 16 - len(self.left_items)
