@@ -89,8 +89,8 @@ class Status :
         return np.array(results)
 
     def get_new_status(self, action):
-        if (self.item != action[0][1]):
-            print("Appling NON consecutive actions!")
+        if (self.item != action[0][1]) or not action[1] in self.left_items :
+            print("Applying invalid move!")
             return None
         new_left_items = self.left_items[:]
         new_left_items.remove(action[1])
@@ -145,3 +145,9 @@ class Status :
 
     def get_num_used_pieces(self):
         return 16 - len(self.left_items)
+
+    def get_score(self):
+        return self.gameboard.score()
+
+    def is_win(self):
+        return self.gameboard.check_win()

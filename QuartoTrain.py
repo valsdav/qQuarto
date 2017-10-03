@@ -38,7 +38,7 @@ FINAL_EPSILON = 0.0001 # final value of epsilon
 INITIAL_EPSILON = 0.1 # starting value of epsilon
 REPLAY_MEMORY = 50000 # number of previous transitions to remember
 BATCH = 32 # size of minibatch
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 5e-5
 ALPHA = 0.7
 
 #We go to training mode
@@ -243,7 +243,7 @@ while(t< EPOCHS +1):
             for i in range(len(losses)):
                 outfile.write(str(losses[i])+" "+str(rewards[i])+" "+ str(pieces[i]) +"\n")
         with open("output/losses.txt", "w") as outfile:
-            for i in range(len(total_losses)):
+            for i in total_losses:
                 outfile.write(str(i) + "\n")
         if t > OBSERVE:
             #send data with bot

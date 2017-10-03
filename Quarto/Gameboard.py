@@ -184,3 +184,28 @@ class Gameboard:
         t[t==1] = 255
         plt.imshow(t, cmap="gray", vmax=255)
         plt.show()
+
+    def __str__(self):
+        lines = []
+        for i in range(4):
+            cols = []
+            for j in range(4):
+                item = "0"
+                for move , arr in items.items():
+                    if np.all(self.gb[i,j] == arr):
+                        item = move
+                cols.append(item)
+            lines.append(" ".join(cols))
+        return "\n".join(lines)
+
+    def print_num(self):
+        lines = []
+        for i in range(4):
+            cols = []
+            for j in range(4):
+                item = ""
+                for k in range(4):
+                    item += str(int(self.gb[i,j,k]))
+                cols.append(item)
+            lines.append(" ".join(cols))
+        return "\n".join(lines)
