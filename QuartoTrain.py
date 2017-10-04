@@ -38,10 +38,10 @@ FINAL_EPSILON = 0.0001 # final value of epsilon
 INITIAL_EPSILON = 0.1 # starting value of epsilon
 REPLAY_MEMORY = 50000 # number of previous transitions to remember
 BATCH = 32 # size of minibatch
-LEARNING_RATE = 3e-4
-ALPHA = 0.7
-WIN_BONUS = 8
-WIN_MALUS = 9
+LEARNING_RATE = 1e-4
+ALPHA = 0.9
+WIN_BONUS = 10
+WIN_MALUS = 11
 
 #We go to training mode
 OBSERVE = OBSERVATION
@@ -130,7 +130,7 @@ while(t< EPOCHS +1):
         #Increasing the reward
         r_t = win_r + WIN_BONUS
         #saving win status
-        replay_memory.add((s_t0, a_t0, im_t0, r_t, s_t1, win), 1000)
+        replay_memory.add((s_t0, a_t0, im_t0, r_t, s_t1, win), abs(r_t))
         #restarting cleaning status
         s_t0 = get_initial_status()
         a_t0, im_t0 = select_actions(s_t0)
@@ -156,7 +156,7 @@ while(t< EPOCHS +1):
             #print("WIN of ENEMY! Reward: {}".format(r_t))
 
         # we save the state in the replay memory
-        replay_memory.add((s_t0, a_t0, im_t0, r_t, s_t2, win),1000)
+        replay_memory.add((s_t0, a_t0, im_t0, r_t, s_t2, win),abs(r_t))
         # to the next state
         s_t0 = s_t1
         a_t0 = a_t1
@@ -215,7 +215,7 @@ while(t< EPOCHS +1):
 
             #operations for the experience replay
             td_error = (Q_sa_max - Q_sa)**2
-            new_priorities.append(td_error)
+            new_priorities.append(abs(reward_t))
 
             #saving some stats
             if t % 100 == 0:
@@ -236,7 +236,7 @@ while(t< EPOCHS +1):
         replay_memory.priority_update(indices, new_priorities)
 
          # save progress every 10000 iterations
-    if t % 1000 == 0:
+    if t % 10000 == 0:
         print("Now we save model")
         model.save_weights("output/model.h5", overwrite=True)
         with open("output/losses_details.txt", "w") as outfile:
